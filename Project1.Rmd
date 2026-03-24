@@ -1,0 +1,145 @@
+---
+title: "Project 1"
+author: "Isabella Torres | Yuan Pei Yang"
+date: "2026-04-05"
+output: html_document
+---
+
+```{r datasets}
+#Loading data sets and assigning names for use
+confirmations <- read.csv("data/time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
+deaths <- read.csv("data/time_series_covid19_deaths_global.csv", stringsAsFactors = FALSE)
+```
+
+# Objective 1: Covid's Origin
+
+```{r obj1}
+
+```
+
+# Objective 2: Most Recent Area Exposed
+
+```{r obj2}
+
+```
+
+# Objective 3: How Far the Virus Traveled
+
+```{r obj3}
+
+```
+
+# Objective 4: Who is Most At Risk?
+
+```{r obj4}
+#Create vector of location information
+locationData = c("Province.State","Country.Region","Lat","Long")
+
+#Find last column of the data set to use most recent data for every render
+lastCol = ncol(confirmations)
+
+#Duplicate last column under a new name
+confirmations$recentConf = confirmations[, lastCol]
+deaths$recentDeath = deaths[, lastCol]
+
+#Merge confirmations and deaths data sets
+riskData = merge(x=confirmations, y=deaths,
+                 by.x=c(locationData),
+                 by.y=c(locationData))
+#Take objective-specific columns
+riskData = riskData[c(locationData,"recentConf","recentDeath")]
+
+#Filter data to exclude cruise ships
+riskData = riskData[!is.na(riskData$Lat) & riskData$Lat != 0, ]
+
+#Calculate Risk
+risk = 100 * (riskData$recentDeath / riskData$recentConf)
+riskData$Risk.Score = risk #Add risk score to riskData 
+riskData = riskData[!is.na(riskData$Risk.Score), ] #Remove NA values
+
+#Global risk
+globalRisk = 100 * (sum(deaths$X3.9.23, na.rm = TRUE) / sum(confirmations$X3.9.23, na.rm = TRUE))
+
+#Find areas with the lowest risk
+lowRisk = riskData[riskData$Risk.Score == min(risk, na.rm = TRUE), ] 
+mostConf = max(lowRisk[, "recentConf"]) #Find most confirmations within lowRisk areas
+
+#Area with the lowest risk:
+lowRisk = lowRisk[lowRisk$recentConf == mostConf, ]
+
+#Area with the highest risk:
+highRisk = riskData[riskData$Risk.Score == max(risk, na.rm = TRUE), ] 
+
+#Displaying results
+cat("Global Risk:", globalRisk, "\n")
+cat("Area with the Lowest Risk Score:", lowRisk[[1]], lowRisk[[2]],"-> Risk Score =", lowRisk[[7]], "\n")
+cat("Area with the Highest Risk Score:", highRisk[[2]],"-> Risk Score =", highRisk[[7]])
+```
+
+**Which area of the world currently has the lowest risk score (if more than one, display the one with the most confirmations)? Which area of the world currently has the highest risk score (if more than one, display the one with the most confirmations)? How do risk scores in these areas compare to global risk score? Why might it be helpful to calculate metrics like risk scores for different areas of the world and what would their limitations be (what assumptions does risk score make and what important variables might be left out)?**
+
+Write Up: Jiangsu, China has the lowest risk score, while North Korea has the highest risk score. The risk score of Jiangsu, China in comparison to the world only has a difference of about 1%, while North Korea's risk score differs by 599%. Risk scores can assume the healthcare industry of that area; with lower scores having better healthcare or better resources than areas with higher risk scores. We can use this information to know how to allocate resources based on need. Some limitations can be like North Korea, which showed the highest risk score. However, it is likely that they just did not submit the correct number of confirmations and deaths. In other words, data integrity is something data scientists need to consider in their analysis.
+
+# Objective 5: Top 5 Countries
+
+```{r obj5}
+#Create vector of countries
+countries = unique(confirmations$Country.Region)
+
+#Load knitr package for kable
+library("knitr")
+```
+
+### Top 5 Confirmations
+
+```{r obj5_conf}
+#Create empty vector to hold sum of confirmations per country
+confSum = c()
+confCol = names(confirmations)[ncol(confirmations)] #column that holds most recent count
+
+for (i in countries) { #iterates through all countries
+  #Subset of data frame using country specified in loop
+  countrySubset = confirmations[confirmations$Country.Region == i, ]
+  #Compute country's sum of confirmations
+  countryConf = sum(countrySubset[[confCol]], na.rm = TRUE)
+  #Adds country's sum to confSum vector
+  confSum = c(confSum, countryConf)
+}
+
+#Create data frame of countries and their confirmation count
+top5Conf = data.frame(Country = countries, Confirmations = confSum)
+top5Conf = top5Conf[order(top5Conf$Confirmations, decreasing = TRUE), ] #Ordered by confirmations
+
+#Take only top 5 countries with the most confirmations
+top5Conf = head(top5Conf, n = 5)
+
+#Return table, removes row indices
+kable(top5Conf, row.names = FALSE)
+```
+
+### Top 5 Deaths
+
+```{r obj5_death}
+#Create empty vector to hold sum of deaths per country
+deathSum = c()
+deathCol = names(deaths)[ncol(deaths)] #column that holds most recent count
+
+for (i in countries) { #iterates through all countries
+  #Subset of data frame using country specified in loop
+  countrySubset = deaths[deaths$Country.Region == i, ]
+  #Compute country's sum of deaths
+  countryDeath = sum(countrySubset[[deathCol]], na.rm = TRUE)
+  #Adds country's sum to deathSum vector
+  deathSum = c(deathSum, countryDeath)
+}
+
+#Create data frame of countries and their death count
+top5Death = data.frame(Country = countries, Deaths = deathSum)
+top5Death = top5Death[order(top5Death$Deaths, decreasing = TRUE), ] #Ordered by deaths
+
+#Take only top 5 countries with the most deaths
+top5Death = head(top5Death, n = 5)
+
+#Return table, removes row indices
+kable(top5Death, row.names = FALSE)
+```
