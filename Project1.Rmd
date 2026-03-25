@@ -12,10 +12,32 @@ deaths <- read.csv("data/time_series_covid19_deaths_global.csv", stringsAsFactor
 ```
 
 # Objective 1: Covid's Origin
-
 ```{r obj1}
+find_origin <- function(df) {
+  # get first day col name
+  first_day_col <- names(df)[5]
+  # extract first col values as a vector
+  first_day_counts <- df[[first_day_col]]
+  # get unique countries for grouping
+  countries <- unique(df$Country.Region)
+  # create empty named vector to store country counts
+  counts <- setNames(rep(0, length(countries)), countries)
+  # loop
+  for (i in 1:nrow(df)) {
+    country <- df$Country.Region[i]
+    value <- first_day_counts[i]
+    counts[country] <- counts[country] + value
+  }
+  
+  top_country <- names(counts)[order(counts, decreasing = TRUE)][1]
+}
 
+origin_confirmation <- find_origin(confirmations)
+origin_confirmation
+origin_death <- find_origin(deaths)
+origin_death
 ```
+
 
 # Objective 2: Most Recent Area Exposed
 
