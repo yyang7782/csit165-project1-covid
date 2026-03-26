@@ -362,9 +362,56 @@ confirmations &lt;- read.csv(&quot;data/time_series_covid19_confirmed_global.csv
 deaths &lt;- read.csv(&quot;data/time_series_covid19_deaths_global.csv&quot;, stringsAsFactors = FALSE)</code></pre>
 <div id="objective-1-covids-origin" class="section level1">
 <h1>Objective 1: Covid’s Origin</h1>
+<pre class="r"><code>find_origin &lt;- function(df) {
+  # get first day col name
+  first_day_col &lt;- names(df)[5]
+  # extract first col values as a vector
+  first_day_counts &lt;- df[[first_day_col]]
+  # get unique countries for grouping
+  countries &lt;- unique(df$Country.Region)
+  # create empty named vector to store country counts
+  counts &lt;- setNames(rep(0, length(countries)), countries)
+  # loop
+  for (i in 1:nrow(df)) {
+    country &lt;- df$Country.Region[i]
+    value &lt;- first_day_counts[i]
+    counts[country] &lt;- counts[country] + value
+  }
+  
+  top_country &lt;- names(counts)[order(counts, decreasing = TRUE)][1]
+}
+
+origin_confirmation &lt;- find_origin(confirmations)
+origin_confirmation</code></pre>
+<pre><code>## [1] &quot;China&quot;</code></pre>
+<pre class="r"><code>origin_death &lt;- find_origin(deaths)
+origin_death</code></pre>
+<pre><code>## [1] &quot;China&quot;</code></pre>
 </div>
 <div id="objective-2-most-recent-area-exposed" class="section level1">
 <h1>Objective 2: Most Recent Area Exposed</h1>
+<pre class="r"><code># prepare result container
+result &lt;- data.frame(
+  province = confirmations[, 1],
+  country = confirmations[, 2],
+  first_date = as.Date(rep(NA, nrow(confirmations)))
+)
+# loop and compute the first date
+for (i in seq_len(nrow(confirmations))) {
+  for (j in 5:ncol(confirmations)) {
+    if (!is.na(confirmations[i, j]) &amp;&amp; confirmations[i, j] &gt; 0) {
+      result$first_date[i] &lt;- as.Date(names(confirmations)[j], format = &quot;X%m.%d.%y&quot;)
+      break
+    }
+  }
+}
+# find the most recent one
+result &lt;- result[order(result$first_date, decreasing = TRUE), ]
+top &lt;- head(result, 1)
+cat(&quot;Province:&quot;, top$province, &quot;\nCountry:&quot;, top$country, &quot;\nFirst Date:&quot;, format(top$first_date, &quot;%m/%d/%Y&quot;))</code></pre>
+<pre><code>## Province: Pitcairn Islands 
+## Country: United Kingdom 
+## First Date: 07/20/2022</code></pre>
 </div>
 <div id="objective-3-how-far-the-virus-traveled" class="section level1">
 <h1>Objective 3: How Far the Virus Traveled</h1>

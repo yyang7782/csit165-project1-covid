@@ -42,7 +42,25 @@ origin_death
 # Objective 2: Most Recent Area Exposed
 
 ```{r obj2}
-
+# prepare result container
+result <- data.frame(
+  province = confirmations[, 1],
+  country = confirmations[, 2],
+  first_date = as.Date(rep(NA, nrow(confirmations)))
+)
+# loop and compute the first date
+for (i in seq_len(nrow(confirmations))) {
+  for (j in 5:ncol(confirmations)) {
+    if (!is.na(confirmations[i, j]) && confirmations[i, j] > 0) {
+      result$first_date[i] <- as.Date(names(confirmations)[j], format = "X%m.%d.%y")
+      break
+    }
+  }
+}
+# find the most recent one
+result <- result[order(result$first_date, decreasing = TRUE), ]
+top <- head(result, 1)
+cat("Province:", top$province, "\nCountry:", top$country, "\nFirst Date:", format(top$first_date, "%m/%d/%Y"))
 ```
 
 # Objective 3: How Far the Virus Traveled
