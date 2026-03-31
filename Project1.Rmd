@@ -10,32 +10,31 @@ output: html_document
 confirmations <- read.csv("data/time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
 deaths <- read.csv("data/time_series_covid19_deaths_global.csv", stringsAsFactors = FALSE)
 ```
+```{r}
 
+```
 # Objective 1: Covid's Origin
 ```{r obj1}
-find_origin <- function(df) {
-  # get first day col name
-  first_day_col <- names(df)[5]
-  # extract first col values as a vector
-  first_day_counts <- df[[first_day_col]]
-  # get unique countries for grouping
-  countries <- unique(df$Country.Region)
-  # create empty named vector to store country counts
-  counts <- setNames(rep(0, length(countries)), countries)
-  # loop
-  for (i in 1:nrow(df)) {
-    country <- df$Country.Region[i]
-    value <- first_day_counts[i]
-    counts[country] <- counts[country] + value
-  }
-  
-  top_country <- names(counts)[order(counts, decreasing = TRUE)][1]
-}
+# date record starts from col 5
+FIRST_DAY_COL <- 5
 
-origin_confirmation <- find_origin(confirmations)
-origin_confirmation
-origin_death <- find_origin(deaths)
-origin_death
+# function to find origin, returns [Province, Country, Lat, Long]
+find_origin <- function(df) {
+  sorted <- df[order(df[[FIRST_DAY_COL]], decreasing = TRUE), 1:4]
+  head(sorted, 1)
+}
+# apply function to confirmations and deaths data frame
+og_confirm <- find_origin(confirmations)
+loc1 <- paste(og_confirm, collapse = ', ')
+og_death <- find_origin(deaths)
+loc2 <- paste(og_death, collapse = ', ')
+# check if region with most confirmations is the same as region with most deaths on the first day
+if (loc1 == loc2) {
+  cat(loc1,
+      "had the greatest number of confirmations and deaths on the first recorded day")
+} else {
+  print("Origin was not found due to inconsistant locations.")
+}
 ```
 
 
@@ -57,7 +56,7 @@ for (i in seq_len(nrow(confirmations))) {
     }
   }
 }
-# find the most recent one
+# find the most recent one by sorting first_day col in descending order
 result <- result[order(result$first_date, decreasing = TRUE), ]
 top <- head(result, 1)
 cat("Province:", top$province, "\nCountry:", top$country, "\nFirst Date:", format(top$first_date, "%m/%d/%Y"))
