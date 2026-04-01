@@ -368,31 +368,40 @@ find_origin &lt;- function(df) {
   as.list(head(sorted, 1))
 }
 
-# function to print formatted location
-format_loc &lt;- function(loc) {
-  # extract loc values  
-  province &lt;- loc[[1]]
-  country &lt;- loc[[2]]
+#function to print formatted coordination
+format_coord &lt;- function(loc) {
   lat &lt;- loc[[3]]
   long &lt;- loc[[4]]
+  paste(&quot;(Lat: &quot;, lat, &quot;, Long: &quot;, long, &quot;)&quot;, sep = &quot;&quot;)
+}
+
+# function to print formatted region
+format_region &lt;- function(loc) {
+  # extract province and country
+  province &lt;- loc[[1]]
+  country &lt;- loc[[2]]
   
   # check if province is empty or NA
   if (is.null(province) || is.na(province) || province == &quot;&quot;) {
-    paste(country, &quot; (Lat: &quot;, lat, &quot;, Long: &quot;, long, &quot;)&quot;, sep = &quot;&quot;)
+    country
   } else {
-    paste(province, &quot;, &quot;, country, &quot; (Lat: &quot;, lat, &quot;, Long: &quot;, long, &quot;)&quot;, sep = &quot;&quot;)
+    # combine province and country into a vector
+    region_vec &lt;- unlist(loc[1:2])
+    
+    # join vector elems to produce the output
+    paste(region_vec, collapse = &quot;, &quot;)
   }
 }
 
 # find origin locations from confirmations and deaths data frames
 og_confirm &lt;- find_origin(confirmations)
-loc1 &lt;- format_loc(og_confirm)
+region1 &lt;- format_region(og_confirm)
 og_death &lt;- find_origin(deaths)
-loc2 &lt;- format_loc(og_death) 
+region2 &lt;- format_region(og_death) 
 
 # check if region with most confirmations is the same as region with most deaths on the first day
-if (loc1 == loc2) {
-  cat(loc1,
+if (region1 == region2) {
+  cat(region1, format_coord(og_confirm),
       &quot;had the greatest number of confirmations and deaths on the first recorded day&quot;)
 } else {
   print(&quot;Origin was not found due to inconsistant locations.&quot;)
@@ -418,11 +427,29 @@ for (i in seq_len(nrow(confirmations))) {
 result &lt;- result[order(result$first_date, decreasing = TRUE), ]
 most_rec &lt;- as.list(head(result, 1))  # take the first row and convert it to a list
 
-cat(format_loc(most_rec), &quot;was the most recent area exposed (First Confirmation Date:&quot;, format(as.Date(most_rec$first_date), &quot;%m/%d/%Y)&quot;))</code></pre>
+cat(format_region(most_rec), format_coord(most_rec), &quot;was the most recent area exposed (First Confirmation Date:&quot;, format(as.Date(most_rec$first_date), &quot;%m/%d/%Y)&quot;))</code></pre>
 <pre><code>## Pitcairn Islands, United Kingdom (Lat: -24.3768, Long: -128.3242) was the most recent area exposed (First Confirmation Date: 07/20/2022)</code></pre>
 </div>
 <div id="objective-3-how-far-the-virus-traveled" class="section level1">
 <h1>Objective 3: How Far the Virus Traveled</h1>
+<pre class="r"><code>library(geosphere)
+
+# convert location lists from obj #1 and #2 to vectors with (long, lat) order for distm() 
+coord_origin &lt;- c(og_confirm[[4]], og_confirm[[3]])
+coord_most_rec &lt;- c(most_rec[[4]], most_rec[[3]])
+
+# compute distance (in meter) with distm()
+dist_meter &lt;- distm(coord_origin, coord_most_rec, fun = distHaversine)
+
+# define meter-to-mile constant
+METER_TO_MILE &lt;- 0.000621371
+
+# convert to mile
+dist_mile &lt;- dist_meter * METER_TO_MILE
+
+# print required output
+cat(format_region(most_rec), &quot;is&quot;, dist_mile, &quot;away from&quot;, format_region(og_confirm))</code></pre>
+<pre><code>## Pitcairn Islands, United Kingdom is 8755.192 away from Hubei, China</code></pre>
 </div>
 <div id="objective-4-who-is-most-at-risk" class="section level1">
 <h1>Objective 4: Who is Most At Risk?</h1>
