@@ -362,40 +362,49 @@ confirmations &lt;- read.csv(&quot;data/time_series_covid19_confirmed_global.csv
 deaths &lt;- read.csv(&quot;data/time_series_covid19_deaths_global.csv&quot;, stringsAsFactors = FALSE)</code></pre>
 <div id="objective-1-covids-origin" class="section level1">
 <h1>Objective 1: Covid’s Origin</h1>
-<pre class="r"><code>find_origin &lt;- function(df) {
-  # get first day col name
-  first_day_col &lt;- names(df)[5]
-  # extract first col values as a vector
-  first_day_counts &lt;- df[[first_day_col]]
-  # get unique countries for grouping
-  countries &lt;- unique(df$Country.Region)
-  # create empty named vector to store country counts
-  counts &lt;- setNames(rep(0, length(countries)), countries)
-  # loop
-  for (i in 1:nrow(df)) {
-    country &lt;- df$Country.Region[i]
-    value &lt;- first_day_counts[i]
-    counts[country] &lt;- counts[country] + value
-  }
-  
-  top_country &lt;- names(counts)[order(counts, decreasing = TRUE)][1]
+<pre class="r"><code># function to find origin, returns [Province, Country, Lat, Long], return a list
+find_origin &lt;- function(df) {
+  sorted &lt;- df[order(df[[5]], decreasing = TRUE), 1:4]
+  as.list(head(sorted, 1))
 }
 
-origin_confirmation &lt;- find_origin(confirmations)
-origin_confirmation</code></pre>
-<pre><code>## [1] &quot;China&quot;</code></pre>
-<pre class="r"><code>origin_death &lt;- find_origin(deaths)
-origin_death</code></pre>
-<pre><code>## [1] &quot;China&quot;</code></pre>
+# function to print formatted location
+format_loc &lt;- function(loc) {
+  # extract loc values  
+  province &lt;- loc[[1]]
+  country &lt;- loc[[2]]
+  lat &lt;- loc[[3]]
+  long &lt;- loc[[4]]
+  
+  # check if province is empty or NA
+  if (is.null(province) || is.na(province) || province == &quot;&quot;) {
+    paste(country, &quot; (Lat: &quot;, lat, &quot;, Long: &quot;, long, &quot;)&quot;, sep = &quot;&quot;)
+  } else {
+    paste(province, &quot;, &quot;, country, &quot; (Lat: &quot;, lat, &quot;, Long: &quot;, long, &quot;)&quot;, sep = &quot;&quot;)
+  }
+}
+
+# find origin locations from confirmations and deaths data frames
+og_confirm &lt;- find_origin(confirmations)
+loc1 &lt;- format_loc(og_confirm)
+og_death &lt;- find_origin(deaths)
+loc2 &lt;- format_loc(og_death) 
+
+# check if region with most confirmations is the same as region with most deaths on the first day
+if (loc1 == loc2) {
+  cat(loc1,
+      &quot;had the greatest number of confirmations and deaths on the first recorded day&quot;)
+} else {
+  print(&quot;Origin was not found due to inconsistant locations.&quot;)
+}</code></pre>
+<pre><code>## Hubei, China (Lat: 30.9756, Long: 112.2707) had the greatest number of confirmations and deaths on the first recorded day</code></pre>
 </div>
 <div id="objective-2-most-recent-area-exposed" class="section level1">
 <h1>Objective 2: Most Recent Area Exposed</h1>
 <pre class="r"><code># prepare result container
-result &lt;- data.frame(
-  province = confirmations[, 1],
-  country = confirmations[, 2],
-  first_date = as.Date(rep(NA, nrow(confirmations)))
-)
+result &lt;- confirmations[, 1:4]
+result$first_date &lt;- NA
+
 # loop and compute the first date
 for (i in seq_len(nrow(confirmations))) {
   for (j in 5:ncol(confirmations)) {
@@ -405,13 +414,12 @@ for (i in seq_len(nrow(confirmations))) {
     }
   }
 }
-# find the most recent one
+# find the most recent one by sorting first_day col in descending order
 result &lt;- result[order(result$first_date, decreasing = TRUE), ]
-top &lt;- head(result, 1)
-cat(&quot;Province:&quot;, top$province, &quot;\nCountry:&quot;, top$country, &quot;\nFirst Date:&quot;, format(top$first_date, &quot;%m/%d/%Y&quot;))</code></pre>
-<pre><code>## Province: Pitcairn Islands 
-## Country: United Kingdom 
-## First Date: 07/20/2022</code></pre>
+most_rec &lt;- as.list(head(result, 1))  # take the first row and convert it to a list
+
+cat(format_loc(most_rec), &quot;was the most recent area exposed (First Confirmation Date:&quot;, format(as.Date(most_rec$first_date), &quot;%m/%d/%Y)&quot;))</code></pre>
+<pre><code>## Pitcairn Islands, United Kingdom (Lat: -24.3768, Long: -128.3242) was the most recent area exposed (First Confirmation Date: 07/20/2022)</code></pre>
 </div>
 <div id="objective-3-how-far-the-virus-traveled" class="section level1">
 <h1>Objective 3: How Far the Virus Traveled</h1>

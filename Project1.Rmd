@@ -14,20 +14,36 @@ deaths <- read.csv("data/time_series_covid19_deaths_global.csv", stringsAsFactor
 
 ```
 # Objective 1: Covid's Origin
-```{r obj1}
-# date record starts from col 5
-FIRST_DAY_COL <- 5
 
-# function to find origin, returns [Province, Country, Lat, Long]
+```{r obj1}
+# function to find origin, returns [Province, Country, Lat, Long], return a list
 find_origin <- function(df) {
-  sorted <- df[order(df[[FIRST_DAY_COL]], decreasing = TRUE), 1:4]
-  head(sorted, 1)
+  sorted <- df[order(df[[5]], decreasing = TRUE), 1:4]
+  as.list(head(sorted, 1))
 }
-# apply function to confirmations and deaths data frame
+
+# function to print formatted location
+format_loc <- function(loc) {
+  # extract loc values  
+  province <- loc[[1]]
+  country <- loc[[2]]
+  lat <- loc[[3]]
+  long <- loc[[4]]
+  
+  # check if province is empty or NA
+  if (is.null(province) || is.na(province) || province == "") {
+    paste(country, " (Lat: ", lat, ", Long: ", long, ")", sep = "")
+  } else {
+    paste(province, ", ", country, " (Lat: ", lat, ", Long: ", long, ")", sep = "")
+  }
+}
+
+# find origin locations from confirmations and deaths data frames
 og_confirm <- find_origin(confirmations)
-loc1 <- paste(og_confirm, collapse = ', ')
+loc1 <- format_loc(og_confirm)
 og_death <- find_origin(deaths)
-loc2 <- paste(og_death, collapse = ', ')
+loc2 <- format_loc(og_death) 
+
 # check if region with most confirmations is the same as region with most deaths on the first day
 if (loc1 == loc2) {
   cat(loc1,
@@ -42,11 +58,9 @@ if (loc1 == loc2) {
 
 ```{r obj2}
 # prepare result container
-result <- data.frame(
-  province = confirmations[, 1],
-  country = confirmations[, 2],
-  first_date = as.Date(rep(NA, nrow(confirmations)))
-)
+result <- confirmations[, 1:4]
+result$first_date <- NA
+
 # loop and compute the first date
 for (i in seq_len(nrow(confirmations))) {
   for (j in 5:ncol(confirmations)) {
@@ -58,14 +72,14 @@ for (i in seq_len(nrow(confirmations))) {
 }
 # find the most recent one by sorting first_day col in descending order
 result <- result[order(result$first_date, decreasing = TRUE), ]
-top <- head(result, 1)
-cat("Province:", top$province, "\nCountry:", top$country, "\nFirst Date:", format(top$first_date, "%m/%d/%Y"))
+most_rec <- as.list(head(result, 1))  # take the first row and convert it to a list
+
+cat(format_loc(most_rec), "was the most recent area exposed (First Confirmation Date:", format(as.Date(most_rec$first_date), "%m/%d/%Y)"))
 ```
 
 # Objective 3: How Far the Virus Traveled
 
 ```{r obj3}
-
 ```
 
 # Objective 4: Who is Most At Risk?
