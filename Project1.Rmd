@@ -1,10 +1,11 @@
 ---
-title: "Project 1"
+title: "Project 1 <small>([GitHub Repo: csit165-project1-covid](https://github.com/yyang7782/csit165-project1-covid))</small>"
 author: "Isabella Torres | Yuan Pei Yang"
 date: "2026-04-05"
-output: html_document
+output:
+  html_document:
+    toc: true
 ---
-
 ```{r datasets}
 #Loading data sets and assigning names for use
 confirmations <- read.csv("data/time_series_covid19_confirmed_global.csv", stringsAsFactors = FALSE)
@@ -16,20 +17,20 @@ deaths <- read.csv("data/time_series_covid19_deaths_global.csv", stringsAsFactor
 # Objective 1: Covid's Origin
 
 ```{r obj1}
-# function to find origin, returns [Province, Country, Lat, Long], return a list
+# helper function to find origin, returns [Province, Country, Lat, Long] as a list
 find_origin <- function(df) {
   sorted <- df[order(df[[5]], decreasing = TRUE), 1:4]
   as.list(head(sorted, 1))
 }
 
-#function to print formatted coordination
+# helper function to print formatted coordination
 format_coord <- function(loc) {
   lat <- loc[[3]]
   long <- loc[[4]]
   paste("(Lat: ", lat, ", Long: ", long, ")", sep = "")
 }
 
-# function to print formatted region
+# heper function to print formatted region
 format_region <- function(loc) {
   # extract province and country
   province <- loc[[1]]
