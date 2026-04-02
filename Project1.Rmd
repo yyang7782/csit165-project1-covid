@@ -105,7 +105,7 @@ METER_TO_MILE <- 0.000621371
 dist_mile <- dist_meter * METER_TO_MILE
 
 # print required output
-cat(format_region(most_rec), "is", dist_mile, "away from", format_region(og_confirm))
+cat(format_region(most_rec), "is", dist_mile, "miles away from", format_region(og_confirm))
 ```
 
 # Objective 4: Who is Most At Risk?
